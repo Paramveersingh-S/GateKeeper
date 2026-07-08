@@ -22,10 +22,19 @@ services:
 
   nats:
     image: nats:latest
-    command: ["-js"]
     ports:
       - "4222:4222"
       - "8222:8222"
+    command: ["-js"]
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
 
   # Mock LLM backend for local testing
   mock-llm:

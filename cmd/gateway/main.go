@@ -11,8 +11,8 @@ import (
 	"github.com/Paramveersingh-S/GateKeeper/internal/admin"
 	"github.com/Paramveersingh-S/GateKeeper/internal/ratelimit"
 	"github.com/Paramveersingh-S/GateKeeper/internal/telemetry"
-	"github.com/redis/go-redis/v9"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 type Gateway struct {
@@ -21,13 +21,21 @@ type Gateway struct {
 }
 
 func main() {
+	// Initialize OpenTelemetry
+	ctx := context.Background()
+	shutdownTracer, err := telemetry.InitTracer(ctx, "127.0.0.1:4317", "gatekeeper-gateway")
+	if err != nil {
+		log.Printf("Warning: failed to initialize tracer: %v", err)
+	} else {
+		defer shutdownTracer(ctx)
+	}
+
 	// Initialize Redis Client
 	rdb := redis.NewClient(&redis.Options{
 		Addr: "127.0.0.1:6379",
 	})
 	
 	// Initialize PostgreSQL Client
-	ctx := context.Background()
 	dbpool, err := pgxpool.New(ctx, "postgres://gatekeeper:password@127.0.0.1:5432/gatekeeper?sslmode=disable")
 	if err != nil {
 		log.Fatalf("Unable to create connection pool: %v\n", err)
@@ -86,6 +94,18 @@ func (gw *Gateway) rateLimitMiddleware(next http.Handler) http.Handler {
 
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 		defer cancel()
+
+		targetProvider := "mock-llm"
+		tracer := telemetry.GetTracer("gateway")
+		ctx, span := tracer.Start(ctx, "Proxy Request to "+targetProvider)
+		defer span.End()
+
+		span.SetAttributes(
+			semconv.HTTPMethodKey.String(r.Method),
+			semconv.HTTPURLKey.String(r.URL.String()),
+			semconv.StringKey.String("tenant.id", tenantID),
+			semconv.StringKey.String("provider", targetProvider),
+		)
 
 		policy := ratelimit.Policy{
 			Algorithm: ratelimit.TokenBucket,
