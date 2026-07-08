@@ -1,50 +1,128 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
-const usageData = [
-  { time: '10:00', tokens: 4000, cost: 0.05 },
-  { time: '10:05', tokens: 3000, cost: 0.03 },
-  { time: '10:10', tokens: 2000, cost: 0.02 },
-  { time: '10:15', tokens: 2780, cost: 0.04 },
-  { time: '10:20', tokens: 1890, cost: 0.01 },
-  { time: '10:25', tokens: 2390, cost: 0.02 },
-  { time: '10:30', tokens: 3490, cost: 0.04 },
-];
-
-const tenants = [
-  { id: '1', name: 'Acme Corp', tier: 'Pro', cost: '$12.40' },
-  { id: '2', name: 'Startup Inc', tier: 'Basic', cost: '$3.20' },
-  { id: '3', name: 'Global Tech', tier: 'Enterprise', cost: '$145.00' },
-];
-
 export default function Dashboard() {
+  const [token, setToken] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const [usageData, setUsageData] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Check local storage on mount
+    const storedToken = localStorage.getItem('gk_admin_token');
+    if (storedToken) setToken(storedToken);
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (!res.ok) throw new Error('Invalid credentials');
+      const data = await res.json();
+      setToken(data.token);
+      localStorage.setItem('gk_admin_token', data.token);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleLogout = () => {
+    setToken(null);
+    localStorage.removeItem('gk_admin_token');
+  };
+
+  // Poll data
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchData = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        // In a real app we'd fetch actual tenants. For now we use the mock tenant to see data.
+        const res = await fetch('/admin/usage?tenant_id=tenant_mock', { headers });
+        if (res.status === 401) { handleLogout(); return; }
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        // Map data to recharts format
+        if (data && data.length > 0) {
+            const formatted = data.map((d: any) => ({
+                time: new Date(d.hour).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                tokens: d.tokens,
+                cost: d.cost
+            }));
+            setUsageData(formatted);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center font-sans">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 w-96">
+          <h1 className="text-2xl font-bold mb-6 text-gray-900 text-center">GateKeeper Admin</h1>
+          {error && <div className="mb-4 text-red-500 text-sm bg-red-50 p-3 rounded">{error}</div>}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm p-2 text-gray-900 border" required />
+          </div>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm p-2 text-gray-900 border" required />
+          </div>
+          <button type="submit" className="w-full bg-indigo-600 text-white font-medium py-2 px-4 rounded-md hover:bg-indigo-700 transition">Login (admin / admin)</button>
+        </form>
+      </div>
+    );
+  }
+
+  const totalTokens = usageData.reduce((acc, curr) => acc + curr.tokens, 0);
+  const totalCost = usageData.reduce((acc, curr) => acc + curr.cost, 0);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">GateKeeper Admin</h1>
-        <p className="text-gray-500">LLM API Gateway & Intelligent Rate Limiter</p>
+    <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-900">
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+            <h1 className="text-3xl font-bold text-gray-900">GateKeeper Admin</h1>
+            <p className="text-gray-500">LLM API Gateway & Intelligent Rate Limiter</p>
+        </div>
+        <button onClick={handleLogout} className="text-sm text-indigo-600 hover:text-indigo-900 font-medium">Logout</button>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
           <h3 className="text-sm font-medium text-gray-500">Total Tokens (24h)</h3>
-          <p className="text-3xl font-bold text-gray-900">1.2M</p>
+          <p className="text-3xl font-bold text-gray-900">{totalTokens.toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
           <h3 className="text-sm font-medium text-gray-500">Total Cost (24h)</h3>
-          <p className="text-3xl font-bold text-gray-900">$18.45</p>
+          <p className="text-3xl font-bold text-gray-900">${totalCost.toFixed(5)}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
           <h3 className="text-sm font-medium text-gray-500">Cache Hit Rate</h3>
-          <p className="text-3xl font-bold text-emerald-600">34.2%</p>
+          <p className="text-3xl font-bold text-emerald-600">--%</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold mb-4">Token Usage</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Token Usage</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={usageData}>
@@ -60,7 +138,7 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold mb-4">Cost Over Time (USD)</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Cost Over Time (USD)</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={usageData}>
@@ -74,40 +152,6 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-xl font-semibold">Tenants & API Keys</h2>
-        </div>
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-500 text-sm">
-            <tr>
-              <th className="px-6 py-3 font-medium">Tenant Name</th>
-              <th className="px-6 py-3 font-medium">Tier</th>
-              <th className="px-6 py-3 font-medium">Current Spend</th>
-              <th className="px-6 py-3 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {tenants.map((tenant) => (
-              <tr key={tenant.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium text-gray-900">{tenant.name}</td>
-                <td className="px-6 py-4 text-gray-500">
-                  <span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-600 font-medium">
-                    {tenant.tier}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-gray-500">{tenant.cost}</td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
-                    Manage Policies
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );
