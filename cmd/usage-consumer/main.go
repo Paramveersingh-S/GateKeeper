@@ -61,9 +61,9 @@ func main() {
 		// Insert into PostgreSQL
 		_, err = dbpool.Exec(context.Background(), 
 			`INSERT INTO usage_events (tenant_id, model, provider, prompt_tokens, completion_tokens, cost_usd, cache_hit, latency_ms, status) 
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'success')`,
 			event.TenantID, event.Model, event.Provider, event.PromptTokens, event.CompletionTokens, 
-			event.CostUSD, event.CacheHit, event.LatencyMs, event.Status)
+			event.CostUSD, event.CacheHit, event.LatencyMs)
 		
 		if err != nil {
 			log.Printf("Failed to insert usage event: %v", err)
