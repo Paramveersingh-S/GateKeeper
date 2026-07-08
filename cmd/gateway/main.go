@@ -21,14 +21,14 @@ type Gateway struct {
 func main() {
 	// Initialize Redis Client
 	rdb := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: "127.0.0.1:6379",
 	})
 	
 	// Create Limiter
 	limiter := ratelimit.NewRedisLimiter(rdb)
 
 	// URL of the mock LLM backend (defined in docker-compose.yml)
-	mockLLMURL, _ := url.Parse("http://localhost:8081")
+	mockLLMURL, _ := url.Parse("http://127.0.0.1:8081")
 
 	gw := &Gateway{
 		limiter: limiter,
@@ -74,6 +74,9 @@ func (gw *Gateway) rateLimitMiddleware(next http.Handler) http.Handler {
 
 		// 1. RPM Check
 		res, err := gw.limiter.AllowRequest(ctx, tenantID, policy)
+		if err != nil {
+			log.Printf("AllowRequest error: %v", err)
+		}
 		if err != nil || !res.Allowed {
 			w.Header().Set("Retry-After", "1")
 			http.Error(w, "Too Many Requests (RPM)", http.StatusTooManyRequests)
