@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	natsURL := "nats://localhost:4222" // Adjust based on env/docker-compose
+	natsURL := "nats://127.0.0.1:4222" // Using 127.0.0.1 avoids IPv6 Docker binding issues on Linux
 	nc, err := nats.Connect(natsURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
