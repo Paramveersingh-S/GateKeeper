@@ -5,6 +5,11 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql)
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js)
 ![NATS](https://img.shields.io/badge/NATS-JetStream-27AE60?style=for-the-badge&logo=nats)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana)
+![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes)
 
 **GateKeeper** is an enterprise-grade API Gateway and intelligent rate limiter purpose-built for LLM traffic. It provides multi-algorithm token-aware rate limiting, multi-provider failover routing, semantic caching, and asynchronous cost tracking.
 
