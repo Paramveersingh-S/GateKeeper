@@ -3,6 +3,7 @@
 <div align="center">
   <img src="./assets/logo.png" alt="GateKeeper Logo" width="200"/>
 </div>
+
 ![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go)
 ![Redis](https://img.shields.io/badge/Redis-7.0+-DC382D?style=for-the-badge&logo=redis)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql)
