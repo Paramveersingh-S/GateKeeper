@@ -24,6 +24,19 @@ func main() {
 		log.Fatalf("Failed to get JetStream context: %v", err)
 	}
 
+	// Ensure stream exists before subscribing
+	streamName := "USAGE_EVENTS"
+	_, err = js.StreamInfo(streamName)
+	if err != nil {
+		_, err = js.AddStream(&nats.StreamConfig{
+			Name:     streamName,
+			Subjects: []string{"usage.>"},
+		})
+		if err != nil {
+			log.Printf("Warning: failed to create stream: %v", err)
+		}
+	}
+
 	log.Println("Starting Usage Consumer...")
 
 	// Subscribe to usage events
