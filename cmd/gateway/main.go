@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Paramveersingh-S/GateKeeper/internal/ratelimit"
+	"github.com/Paramveersingh-S/GateKeeper/internal/telemetry"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -36,6 +37,9 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+	
+	// Setup metrics endpoint
+	telemetry.SetupMetrics(mux)
 	
 	// Mock proxy handler for OpenAI compatible endpoints
 	proxy := httputil.NewSingleHostReverseProxy(gw.mockLLM)
