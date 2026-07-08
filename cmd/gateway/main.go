@@ -48,42 +48,63 @@ func main() {
 	}
 }
 
-// rateLimitMiddleware applies token bucket rate limiting based on a mock tenant policy.
+// rateLimitMiddleware applies token bucket rate limiting and token reservation.
 func (gw *Gateway) rateLimitMiddleware(next http.Handler) http.Handler {
+	tokenizer := ratelimit.NewHeuristicTokenizer()
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// In a real system, we would extract the API key from Authorization header
-		// and lookup the tenant policy in Postgres.
-		// For now, we mock it.
 		apiKey := r.Header.Get("Authorization")
 		tenantID := "tenant_mock"
 		if apiKey != "" {
 			tenantID = "tenant_" + apiKey
 		}
 
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 		defer cancel()
 
-		// A mock policy: 100 requests per minute
 		policy := ratelimit.Policy{
 			Algorithm: ratelimit.TokenBucket,
 			RPM:       100,
+			TPM:       10000, // 10k tokens per minute
 		}
 
+		// 1. RPM Check
 		res, err := gw.limiter.AllowRequest(ctx, tenantID, policy)
-		if err != nil {
-			log.Printf("Rate limit check failed: %v", err)
-			// Fail open or fail closed? We choose fail closed for safety, but can be configured.
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		if !res.Allowed {
+		if err != nil || !res.Allowed {
 			w.Header().Set("Retry-After", "1")
-			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+			http.Error(w, "Too Many Requests (RPM)", http.StatusTooManyRequests)
 			return
 		}
 
-		// Since it's allowed, proceed to the proxy
+		// 2. Token Estimation
+		estimatedTokens := 50 // baseline
+		// In a real app we'd parse the JSON body to extract the prompt string for estimation
+		// e.g. estimatedTokens = tokenizer.EstimateTokens(parsedPrompt)
+
+		// 3. Reserve Tokens
+		tokenRes, err := gw.limiter.ReserveTokens(ctx, tenantID, estimatedTokens, policy)
+		if err != nil || !tokenRes.Allowed {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "Too Many Tokens (TPM)", http.StatusTooManyRequests)
+			return
+		}
+
+		// 4. Wrap ResponseWriter to capture actual usage from response (for streaming/reconciliation)
+		// Usually this involves parsing the final SSE chunk or response body for usage metadata.
+		// For demo purposes, we will mock the actual tokens used as slightly less than estimated.
+		actualTokens := estimatedTokens - 10 
+		if actualTokens < 0 {
+			actualTokens = 0
+		}
+
+		// Proceed to proxy
 		next.ServeHTTP(w, r)
+
+		// 5. Reconcile Tokens asynchronously
+		go func(tID string, est, act int) {
+			reconcileCtx, recCancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer recCancel()
+			_ = gw.limiter.ReconcileTokens(reconcileCtx, tID, est, act, policy)
+		}(tenantID, estimatedTokens, actualTokens)
 	})
 }
