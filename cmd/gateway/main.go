@@ -13,6 +13,8 @@ import (
 	"github.com/Paramveersingh-S/GateKeeper/internal/telemetry"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
 type Gateway struct {
@@ -103,8 +105,8 @@ func (gw *Gateway) rateLimitMiddleware(next http.Handler) http.Handler {
 		span.SetAttributes(
 			semconv.HTTPMethodKey.String(r.Method),
 			semconv.HTTPURLKey.String(r.URL.String()),
-			semconv.StringKey.String("tenant.id", tenantID),
-			semconv.StringKey.String("provider", targetProvider),
+			attribute.String("tenant.id", tenantID),
+			attribute.String("provider", targetProvider),
 		)
 
 		policy := ratelimit.Policy{
