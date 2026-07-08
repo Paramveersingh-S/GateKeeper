@@ -17,6 +17,13 @@
 
 **GateKeeper** is an enterprise-grade API Gateway and intelligent rate limiter purpose-built for LLM traffic. It provides multi-algorithm token-aware rate limiting, multi-provider failover routing, semantic caching, and asynchronous cost tracking.
 
+### Admin Dashboard Overview
+<div align="center">
+  <img src="./assets/dashboard_screenshot_1.png" alt="Dashboard Main View" width="800" style="margin-bottom: 20px;"/>
+  <br />
+  <img src="./assets/dashboard_screenshot_2.png" alt="Dashboard Charts View" width="800"/>
+</div>
+
 ---
 
 ## 🎯 Problems This Solves
