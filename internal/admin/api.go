@@ -61,7 +61,7 @@ func (s *AdminServer) MountRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /admin/api-keys", authMiddleware(s.handleCreateAPIKey))
 	mux.HandleFunc("DELETE /admin/api-keys/", authMiddleware(s.handleDeleteAPIKey))
 	mux.HandleFunc("PUT /admin/policy", authMiddleware(s.handleUpdatePolicy))
-	mux.HandleFunc("GET /admin/usage", authMiddleware(s.handleGetUsage))
+	mux.HandleFunc("GET /admin/metrics", authMiddleware(s.handleGetUsage))
 	mux.HandleFunc("GET /admin/providers/health", authMiddleware(s.handleProviderHealth))
 }
 
