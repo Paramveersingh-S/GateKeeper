@@ -48,7 +48,7 @@ export default function Dashboard() {
       try {
         const headers = { Authorization: `Bearer ${token}` };
         // In a real app we'd fetch actual tenants. For now we use the mock tenant to see data.
-        const res = await fetch('/admin/usage?tenant_id=tenant_mock', { headers });
+        const res = await fetch('/admin/usage?tenant_id=00000000-0000-0000-0000-000000000000', { headers });
         if (res.status === 401) { handleLogout(); return; }
         if (!res.ok) return;
         const data = await res.json();

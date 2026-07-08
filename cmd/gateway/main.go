@@ -34,6 +34,12 @@ func main() {
 	}
 	defer dbpool.Close()
 
+	// Ensure default mock tenant exists in DB for foreign keys
+	_, err = dbpool.Exec(ctx, `INSERT INTO tenants (id, name, tier) VALUES ('00000000-0000-0000-0000-000000000000', 'GateKeeper Demo Tenant', 'enterprise') ON CONFLICT DO NOTHING`)
+	if err != nil {
+		log.Printf("Warning: failed to seed default tenant: %v", err)
+	}
+
 	// Create Limiter
 	limiter := ratelimit.NewRedisLimiter(rdb)
 
@@ -72,9 +78,10 @@ func (gw *Gateway) rateLimitMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		apiKey := r.Header.Get("Authorization")
-		tenantID := "tenant_mock"
+		// Use a valid UUID format for PostgreSQL foreign key constraints
+		tenantID := "00000000-0000-0000-0000-000000000000"
 		if apiKey != "" {
-			tenantID = "tenant_" + apiKey
+			// In a real app we'd lookup the UUID by the API key
 		}
 
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
