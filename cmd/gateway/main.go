@@ -8,9 +8,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/Paramveersingh-S/GateKeeper/internal/admin"
 	"github.com/Paramveersingh-S/GateKeeper/internal/ratelimit"
 	"github.com/Paramveersingh-S/GateKeeper/internal/telemetry"
 	"github.com/redis/go-redis/v9"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Gateway struct {
@@ -24,6 +26,14 @@ func main() {
 		Addr: "127.0.0.1:6379",
 	})
 	
+	// Initialize PostgreSQL Client
+	ctx := context.Background()
+	dbpool, err := pgxpool.New(ctx, "postgres://gatekeeper:password@127.0.0.1:5432/gatekeeper?sslmode=disable")
+	if err != nil {
+		log.Fatalf("Unable to create connection pool: %v\n", err)
+	}
+	defer dbpool.Close()
+
 	// Create Limiter
 	limiter := ratelimit.NewRedisLimiter(rdb)
 
@@ -39,6 +49,10 @@ func main() {
 	
 	// Setup metrics endpoint
 	telemetry.SetupMetrics(mux)
+
+	// Setup Admin API
+	adminServer := admin.NewAdminServer(dbpool)
+	adminServer.MountRoutes(mux)
 	
 	// Mock proxy handler for OpenAI compatible endpoints
 	proxy := httputil.NewSingleHostReverseProxy(gw.mockLLM)
