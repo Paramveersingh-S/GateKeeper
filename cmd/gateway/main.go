@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -55,6 +54,7 @@ func main() {
 // rateLimitMiddleware applies token bucket rate limiting and token reservation.
 func (gw *Gateway) rateLimitMiddleware(next http.Handler) http.Handler {
 	tokenizer := ratelimit.NewHeuristicTokenizer()
+	_ = tokenizer
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		apiKey := r.Header.Get("Authorization")
