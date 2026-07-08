@@ -9,13 +9,14 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql)
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js)
 ![NATS](https://img.shields.io/badge/NATS-JetStream-27AE60?style=for-the-badge&logo=nats)
-![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus)
-![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana)
-![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes)
+![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Tracing-000000?style=for-the-badge&logo=opentelemetry)
+![Jaeger](https://img.shields.io/badge/Jaeger-Tracing-60C0A8?style=for-the-badge&logo=jaeger)
+![Docker](https://img.shields.io/badge/Docker-Containers-2496ED?style=for-the-badge&logo=docker)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Orchestration-326CE5?style=for-the-badge&logo=kubernetes)
+![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?style=for-the-badge&logo=terraform)
+![AWS EKS](https://img.shields.io/badge/AWS-EKS-232F3E?style=for-the-badge&logo=amazon-aws)
 
-**GateKeeper** is an enterprise-grade API Gateway and intelligent rate limiter purpose-built for LLM traffic. It provides multi-algorithm token-aware rate limiting, multi-provider failover routing, semantic caching, and asynchronous cost tracking.
+**GateKeeper** is an enterprise-grade API Gateway and intelligent rate limiter purpose-built for LLM traffic. It provides multi-algorithm token-aware rate limiting, multi-provider failover routing, semantic caching, asynchronous cost tracking, and comprehensive observability.
 
 ### Admin Dashboard Overview
 <div align="center">
@@ -36,11 +37,11 @@ Generic rate limiters count requests, not tokens, leaving LLM providers vulnerab
 
 ```mermaid
 graph TD
-    Client[Client Applications] -->|HTTPS| LB[Load Balancer]
+    Client[Client Applications] -->|HTTPS| LB[Load Balancer / K8s Ingress]
     LB --> GW1[Gateway Node 1]
     LB --> GW2[Gateway Node 2]
     
-    subgraph Stateless Gateways
+    subgraph EKS Cluster
     GW1
     GW2
     end
@@ -48,6 +49,7 @@ graph TD
     GW1 <-->|Lua Scripts| Redis[(Redis: Rate Limits)]
     GW1 <-->|Vector Search| Cache[(Redis Stack: Cache)]
     GW1 -->|Async Events| NATS[NATS JetStream]
+    GW1 -->|OTLP Traces| Jaeger[Jaeger Distributed Tracing]
     
     GW1 -->|LLM Calls| Adapters[Provider Adapters]
     Adapters --> Gemini[Gemini API]
@@ -57,7 +59,6 @@ graph TD
     Consumer --> Postgres[(PostgreSQL)]
     
     Admin[Next.js Admin Dashboard] --> Postgres
-    Admin --> Prometheus[Prometheus / Grafana]
 ```
 
 ---
