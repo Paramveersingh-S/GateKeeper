@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: gatekeeper
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gatekeeper
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  nats:
+    image: nats:latest
+    command: ["-js"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  # Mock LLM backend for local testing
+  mock-llm:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+
+volumes:
+  redis_data:
+  postgres_data:

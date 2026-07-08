@@ -1,0 +1,25 @@
+# Go
+/bin/
+/obj/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Environment variables
+.env
+.env.local
+
+# Node
+node_modules/
+
+# IDEs
+.idea/
+.vscode/
+
+# Project specifics
+prompt (4).md
