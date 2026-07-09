@@ -32,31 +32,31 @@ func TestRedisLimiter_Allow(t *testing.T) {
 	tenantID := "test_tenant_1"
 
 	// Test 1: Basic allowance within limit
-	allowed, err := limiter.Allow(ctx, tenantID, 5, 10) // cost 5, limit 10
+	res, err := limiter.ReserveTokens(ctx, tenantID, 5, Policy{TPM: 10}) // cost 5, limit 10
 	require.NoError(t, err)
-	assert.True(t, allowed, "should allow 5 tokens when limit is 10")
+	assert.True(t, res.Allowed, "should allow 5 tokens when limit is 10")
 
 	// Test 2: Allowance that exceeds limit
-	allowed, err = limiter.Allow(ctx, tenantID, 6, 10) // cost 6, remaining 5 -> should fail
+	res, err = limiter.ReserveTokens(ctx, tenantID, 6, Policy{TPM: 10}) // cost 6, remaining 5 -> should fail
 	require.NoError(t, err)
-	assert.False(t, allowed, "should reject 6 tokens when only 5 remaining")
+	assert.False(t, res.Allowed, "should reject 6 tokens when only 5 remaining")
 
 	// Test 3: Exact limit
-	allowed, err = limiter.Allow(ctx, tenantID, 5, 10) // cost 5, remaining 5 -> should pass
+	res, err = limiter.ReserveTokens(ctx, tenantID, 5, Policy{TPM: 10}) // cost 5, remaining 5 -> should pass
 	require.NoError(t, err)
-	assert.True(t, allowed, "should allow exact remaining 5 tokens")
+	assert.True(t, res.Allowed, "should allow exact remaining 5 tokens")
 
 	// Test 4: Completely exhausted
-	allowed, err = limiter.Allow(ctx, tenantID, 1, 10)
+	res, err = limiter.ReserveTokens(ctx, tenantID, 1, Policy{TPM: 10})
 	require.NoError(t, err)
-	assert.False(t, allowed, "should reject 1 token when exhausted")
+	assert.False(t, res.Allowed, "should reject 1 token when exhausted")
 
 	// Test 5: Wait for refill (fast-forward time in miniredis)
 	mr.FastForward(2 * time.Minute) // Expiry is 1 minute, so this resets the window
 	
-	allowed, err = limiter.Allow(ctx, tenantID, 10, 10)
+	res, err = limiter.ReserveTokens(ctx, tenantID, 10, Policy{TPM: 10})
 	require.NoError(t, err)
-	assert.True(t, allowed, "should allow 10 tokens after window reset")
+	assert.True(t, res.Allowed, "should allow 10 tokens after window reset")
 }
 
 func TestRedisLimiter_Concurrency(t *testing.T) {
@@ -79,8 +79,8 @@ func TestRedisLimiter_Concurrency(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			allowed, err := limiter.Allow(ctx, tenantID, int64(costPerReq), int64(limit))
-			if err == nil && allowed {
+			res, err := limiter.ReserveTokens(ctx, tenantID, costPerReq, Policy{TPM: limit})
+			if err == nil && res.Allowed {
 				mu.Lock()
 				allowedCount++
 				mu.Unlock()
