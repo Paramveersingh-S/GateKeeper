@@ -16,7 +16,7 @@
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?style=for-the-badge&logo=terraform)
 ![AWS EKS](https://img.shields.io/badge/AWS-EKS-232F3E?style=for-the-badge&logo=amazon-aws)
 
-**GateKeeper** is an enterprise-grade API Gateway and intelligent rate limiter purpose-built for LLM traffic. It provides multi-algorithm token-aware rate limiting, multi-provider failover routing, semantic caching, asynchronous cost tracking, and comprehensive observability.
+**GateKeeper** is an API Gateway and intelligent rate limiter purpose-built for LLM traffic. It provides multi-algorithm token-aware rate limiting, multi-provider failover routing, semantic caching, asynchronous cost tracking, and comprehensive observability.
 
 ### Admin Dashboard Overview
 <div align="center">
